@@ -84,6 +84,8 @@ for that assignment rather than preloading unrelated agents.
 - Coordinate independent work concurrently when supported; order overlapping or dependent work.
 - Preserve clear ownership and resolve conflicts between agent contributions.
 - Check each result against its assignment and route corrections to its owner.
+  Apply [execution reassessment](../../docs/agent-configuration.md#reassess-and-change-execution-settings)
+  when the task changes, progress stalls, or results require repair.
 - Combine results and return concise evidence and blockers to Gizmo Prime.
 
 ## Control local feature changes
@@ -101,7 +103,7 @@ flowchart LR
 ```
 
 - For write work, launch one [integration agent](../../../delivery-team/agents/integration-agent/AGENTS.md)
-  using the team-agent configuration. Give it Prime's feature/base decision,
+  with settings selected for the integration assignment. Give it Prime's feature/base decision,
   worker assignments, dependency order, and required checks.
 - Assign workspace preparation to that agent. Give workers the returned branch
   names and paths, their task scope, checks, and library location.

@@ -6,7 +6,7 @@ entries:
     summary: Framework architecture, distinct state domains, operation outcomes, and human handoffs.
   - title: Agent configuration
     path: agent-configuration.md
-    summary: Host capacity preflight, configuration approval, role settings, and launches.
+    summary: Host capacity, per-assignment model selection, execution reassessment, and launches.
   - title: Agent work ledger
     path: agent-ledger.md
     summary: Homeostat repository browsing, Feature log, checkpoint outcomes, workflow, and recovery.

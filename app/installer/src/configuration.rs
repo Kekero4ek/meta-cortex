@@ -12,72 +12,6 @@ pub enum ConfigError {
     Decode(#[from] de::Error),
     #[error("could not encode meta-cortex.toml: {0}")]
     Encode(#[from] ser::Error),
-    #[error("{model} does not support reasoning effort {effort}")]
-    UnsupportedEffort { model: Model, effort: Effort },
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Display)]
-pub enum Model {
-    #[serde(rename = "gpt-6-luna")]
-    #[display("gpt-6-luna")]
-    Luna,
-    #[serde(rename = "gpt-6-astra")]
-    #[display("gpt-6-astra")]
-    Astra,
-    #[serde(rename = "gpt-6.1-sol")]
-    #[display("gpt-6.1-sol")]
-    Sol61,
-}
-
-impl Model {
-    pub fn efforts(self) -> &'static [Effort] {
-        match self {
-            Self::Luna => &Effort::ALL[..5],
-            Self::Astra | Self::Sol61 => &Effort::ALL,
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Display)]
-#[serde(rename_all = "lowercase")]
-pub enum Effort {
-    #[display("low")]
-    Low,
-    #[display("medium")]
-    Medium,
-    #[display("high")]
-    High,
-    #[display("xhigh")]
-    Xhigh,
-    #[display("max")]
-    Max,
-    #[display("ultra")]
-    Ultra,
-}
-
-impl Effort {
-    const ALL: [Self; 6] = [
-        Self::Low,
-        Self::Medium,
-        Self::High,
-        Self::Xhigh,
-        Self::Max,
-        Self::Ultra,
-    ];
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct AgentSettings {
-    pub model: Model,
-    pub reasoning_effort: Effort,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TeamSettings {
-    pub gizmo: AgentSettings,
-    pub agent: AgentSettings,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -94,35 +28,11 @@ pub struct HostSettings {
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     pub host: HostSettings,
-    // Preserve the framework's existing, published TOML key.
-    #[serde(rename = "gizmo-prime")]
-    pub gizmo_prime: AgentSettings,
-    pub team: TeamSettings,
-}
-
-impl AgentSettings {
-    fn validate(self) -> Result<(), ConfigError> {
-        if self.model.efforts().contains(&self.reasoning_effort) {
-            Ok(())
-        } else {
-            Err(ConfigError::UnsupportedEffort {
-                model: self.model,
-                effort: self.reasoning_effort,
-            })
-        }
-    }
 }
 
 impl Configuration {
     pub fn bundled() -> Result<Self, ConfigError> {
         ConfigText::from(include_str!("../../../cortex/meta-cortex.toml").to_owned()).parse()
-    }
-
-    fn validate(self) -> Result<Self, ConfigError> {
-        self.gizmo_prime.validate()?;
-        self.team.gizmo.validate()?;
-        self.team.agent.validate()?;
-        Ok(self)
     }
 }
 
@@ -132,8 +42,7 @@ pub struct ConfigText(String);
 impl ConfigText {
     pub fn parse(&self) -> Result<Configuration, ConfigError> {
         let Self(text) = self;
-        let config: Configuration = toml::from_str(text)?;
-        config.validate()
+        Ok(toml::from_str(text)?)
     }
 
     pub fn as_bytes(&self) -> &[u8] {
@@ -146,7 +55,7 @@ impl TryFrom<Configuration> for ConfigText {
     type Error = ConfigError;
 
     fn try_from(config: Configuration) -> Result<Self, Self::Error> {
-        Ok(Self(toml::to_string_pretty(&config.validate()?)?))
+        Ok(Self(toml::to_string_pretty(&config)?))
     }
 }
 
@@ -154,168 +63,43 @@ impl TryFrom<Configuration> for ConfigText {
 mod tests {
     use std::num::NonZeroU32;
 
-    use super::{
-        AgentSettings, ConfigError, ConfigText, Configuration, Effort, HostSettings, Model,
-        RequiredTotalAgents, TeamSettings,
-    };
-
-    impl Model {
-        const ALL: [Self; 3] = [Self::Luna, Self::Astra, Self::Sol61];
-    }
+    use super::{ConfigError, ConfigText, Configuration, RequiredTotalAgents};
 
     impl RequiredTotalAgents {
         const STANDARD: Self = Self(NonZeroU32::MIN.saturating_add(19));
     }
 
     #[test]
-    fn bundled_roles_use_gpt_6_1_sol_with_low_effort() -> Result<(), ConfigError> {
+    fn bundled_configuration_contains_only_host_capacity() -> Result<(), ConfigError> {
         let config = Configuration::bundled()?;
-        let expected = AgentSettings {
-            model: Model::Sol61,
-            reasoning_effort: Effort::Low,
-        };
-        assert_eq!(config.gizmo_prime, expected);
-        assert_eq!(config.team.gizmo, expected);
-        assert_eq!(config.team.agent, expected);
         assert_eq!(
             config.host.required_total_agents,
             RequiredTotalAgents::STANDARD
         );
+        let encoded = ConfigText::try_from(config)?;
+        assert_eq!(encoded.parse()?, config);
+        assert_eq!(encoded.to_string(), "[host]\nrequired_total_agents = 20\n");
         Ok(())
     }
 
     #[test]
-    fn supported_model_efforts_round_trip() -> Result<(), ConfigError> {
-        for model in Model::ALL {
-            for &reasoning_effort in model.efforts() {
-                let settings = AgentSettings {
-                    model,
-                    reasoning_effort,
-                };
-                let config = Configuration {
-                    host: HostSettings {
-                        required_total_agents: RequiredTotalAgents::STANDARD,
-                    },
-                    gizmo_prime: settings,
-                    team: TeamSettings {
-                        gizmo: settings,
-                        agent: settings,
-                    },
-                };
-                let encoded = ConfigText::try_from(config)?;
-                assert_eq!(encoded.parse()?, config);
-                assert!(
-                    encoded
-                        .to_string()
-                        .contains(&format!("model = \"{model}\""))
-                );
-                assert!(
-                    encoded
-                        .to_string()
-                        .contains(&format!("reasoning_effort = \"{reasoning_effort}\""))
-                );
-            }
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn bundled_configuration_leaves_speed_to_host() -> Result<(), ConfigError> {
-        let bundled = Configuration::bundled()?;
-        let encoded = ConfigText::try_from(bundled)?;
-        assert_eq!(encoded.parse()?, bundled);
-        assert!(!encoded.to_string().contains("service_tier"));
-        assert!(!encoded.to_string().contains("mode ="));
-        Ok(())
-    }
-
-    #[test]
-    fn rejects_framework_speed_overrides() -> Result<(), ConfigError> {
+    fn rejects_static_execution_settings() -> Result<(), ConfigError> {
         let text = ConfigText::try_from(Configuration::bundled()?)?.to_string();
-        for section in ["[gizmo-prime]", "[team.gizmo]", "[team.agent]"] {
-            for field in [
-                "service_tier = \"priority\"",
-                "service_tier = \"default\"",
-                "mode = \"fast\"",
-                "mode = \"standard\"",
-            ] {
-                let invalid = text.replace(section, &format!("{section}\n{field}"));
-                assert!(matches!(
-                    ConfigText::from(invalid).parse(),
-                    Err(ConfigError::Decode(_))
-                ));
-            }
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn rejects_invalid_or_incomplete_configuration() -> Result<(), ConfigError> {
-        let text = ConfigText::try_from(Configuration {
-            host: HostSettings {
-                required_total_agents: RequiredTotalAgents::STANDARD,
-            },
-            gizmo_prime: AgentSettings {
-                model: Model::Luna,
-                reasoning_effort: Effort::Max,
-            },
-            team: TeamSettings {
-                gizmo: AgentSettings {
-                    model: Model::Astra,
-                    reasoning_effort: Effort::Medium,
-                },
-                agent: AgentSettings {
-                    model: Model::Luna,
-                    reasoning_effort: Effort::Xhigh,
-                },
-            },
-        })?
-        .to_string();
-        for invalid in [
-            text.replace("gpt-6-luna", "unknown-model"),
-            text.replace("\"max\"", "\"extreme\""),
-            text.replace("[team.agent]", "[team.other]"),
-            text.replace("reasoning_effort = \"max\"", ""),
-            format!("{text}\nextra = true\n"),
-            String::from("not valid TOML"),
+        for obsolete in [
+            "[gizmo-prime]\nmodel = \"gpt-6.1-sol\"\nreasoning_effort = \"low\"",
+            "[team.gizmo]\nmodel = \"gpt-6.1-sol\"\nreasoning_effort = \"low\"",
+            "[team.agent]\nmodel = \"gpt-6.1-sol\"\nreasoning_effort = \"low\"",
+            "model = \"gpt-6.1-sol\"",
+            "reasoning_effort = \"max\"",
+            "service_tier = \"priority\"",
+            "mode = \"fast\"",
         ] {
-            assert!(ConfigText::from(invalid).parse().is_err());
+            assert!(matches!(
+                ConfigText::from(format!("{text}\n{obsolete}\n")).parse(),
+                Err(ConfigError::Decode(_))
+            ));
         }
-        let invalid = text.replace("\"xhigh\"", "\"ultra\"");
-        assert!(matches!(
-            ConfigText::from(invalid).parse(),
-            Err(ConfigError::UnsupportedEffort {
-                model: Model::Luna,
-                effort: Effort::Ultra
-            })
-        ));
         Ok(())
-    }
-
-    #[test]
-    fn gpt_6_luna_rejects_ultra_effort() {
-        let settings = AgentSettings {
-            model: Model::Luna,
-            reasoning_effort: Effort::Ultra,
-        };
-        let config = Configuration {
-            host: HostSettings {
-                required_total_agents: RequiredTotalAgents::STANDARD,
-            },
-            gizmo_prime: settings,
-            team: TeamSettings {
-                gizmo: settings,
-                agent: settings,
-            },
-        };
-
-        assert!(matches!(
-            ConfigText::try_from(config),
-            Err(ConfigError::UnsupportedEffort {
-                model: Model::Luna,
-                effort: Effort::Ultra
-            })
-        ));
     }
 
     #[test]

@@ -4,7 +4,7 @@ mod report;
 use anyhow::{Context, bail};
 use meta_cortex_workbench::versions::ProtocolVersion;
 use report::{
-    InfoDocument, Integration, ModelAvailability, ReportHarness, ReportModels,
+    InfoDocument, Integration, ModelSelection, ReportConfiguration, ReportHarness,
     ReportRequiredTotalAgents, ReportSchemaVersion, ReportVersion,
 };
 use serde::{Deserialize, Serialize};
@@ -211,10 +211,8 @@ fn yaml_initialization_preserves_settings_and_reports_project() -> anyhow::Resul
     let config = root.join(".meta-cortex/meta-cortex.toml");
     let customized = format!(
         "# Keep settings\n{}",
-        fs::read_to_string(&config)?.replace(
-            "[team.agent]\nmodel = \"gpt-6.1-sol\"\nreasoning_effort = \"low\"",
-            "[team.agent]\nmodel = \"gpt-6-astra\"\nreasoning_effort = \"high\""
-        )
+        fs::read_to_string(&config)?
+            .replace("required_total_agents = 20", "required_total_agents = 37")
     );
     fs::write(&config, &customized)?;
     let guidance = fs::read(root.join("AGENTS.md"))?;
@@ -226,7 +224,7 @@ fn yaml_initialization_preserves_settings_and_reports_project() -> anyhow::Resul
         instructions: Instructions::Write,
     })?;
     let info = scenario.info()?;
-    assert_eq!(info.schema_version, ReportSchemaVersion::V5);
+    assert_eq!(info.schema_version, ReportSchemaVersion::V6);
     assert_eq!(info.cli_version, ReportVersion::V0_16_0);
     assert_eq!(
         fs::read_to_string(root.join(".meta-cortex/.version"))?,
@@ -244,14 +242,11 @@ fn yaml_initialization_preserves_settings_and_reports_project() -> anyhow::Resul
         .context("Codex")?;
     assert_eq!(codex.status, Integration::Connected);
     assert_eq!(codex.path, root.join("AGENTS.md"));
-    assert_eq!(info.model_availability, ModelAvailability::NotChecked);
-    assert_eq!(info.models.team.gizmo, info.models.gizmo_prime);
+    assert_eq!(info.model_selection, ModelSelection::PerAssignment);
     assert_eq!(
-        info.models.host.required_total_agents,
-        ReportRequiredTotalAgents::STANDARD
+        info.configuration.host.required_total_agents,
+        ReportRequiredTotalAgents::CUSTOM
     );
-    assert_eq!(info.models.team.agent.model, "gpt-6-astra");
-    assert_eq!(info.models.team.agent.reasoning_effort, "high");
     assert_eq!(fs::read_to_string(&config)?, customized);
     assert_eq!(fs::read(root.join("AGENTS.md"))?, guidance);
     fs::remove_file(root.join(".meta-cortex/.version"))?;
@@ -284,13 +279,13 @@ fn yaml_initialization_defaults_are_unattended_and_preserve_guidance() -> anyhow
             harness: Harness::None,
             instructions: Instructions::Skip,
         })?;
-        let actual: ReportModels = toml::from_str(&fs::read_to_string(
+        let actual: ReportConfiguration = toml::from_str(&fs::read_to_string(
             scenario
                 .project
                 .path()
                 .join(".meta-cortex/meta-cortex.toml"),
         )?)?;
-        let expected: ReportModels =
+        let expected: ReportConfiguration =
             toml::from_str(include_str!("../../../cortex/meta-cortex.toml"))?;
         assert_eq!(actual, expected);
         assert_eq!(fs::read_to_string(&guidance)?, "# Existing instructions\n");

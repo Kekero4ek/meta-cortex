@@ -207,10 +207,11 @@ In PowerShell, run `.\meta-cortexw.ps1 run --request request.yaml`.
 The global `meta-cortex` command accepts the same arguments.
 
 Use `harness: none` and `instructions: skip` to install only the framework.
-Initialization installs `.meta-cortex/` with the bundled model and reasoning-effort
-settings, without terminal prompts. Edit `.meta-cortex/meta-cortex.toml` if your
-host needs different models or reasoning efforts. Repeating the request preserves valid project
-settings and does not replace a modified framework.
+Initialization installs `.meta-cortex/` without terminal prompts. Its
+`meta-cortex.toml` configures required host capacity. The launching agent chooses
+model and reasoning effort for each assignment and reassesses when work changes
+or fails review. Repeating initialization preserves valid capacity settings and
+does not replace a modified framework.
 
 Initialization requires a Git repository. It uses its own tools under
 `~/.meta-cortex` (`$HOME\.meta-cortex` in PowerShell) and ignores copies on the user's `PATH`.
@@ -412,9 +413,9 @@ result:
   data:
     kind: framework_info
     value:
-      schema_version: 5
-      cli_version: 0.10.0
-      framework_version: 0.10.0
+      schema_version: 6
+      cli_version: 0.16.0
+      framework_version: 0.16.0
       paths:
         project: /path/to/project
         framework: /path/to/project/.meta-cortex
@@ -429,18 +430,10 @@ result:
         - harness: Cursor
           path: /path/to/project/AGENTS.md
           status: Connected
-      models:
-        gizmo-prime:
-          model: gpt-6-luna
-          reasoning_effort: max
-        team:
-          gizmo:
-            model: gpt-6-luna
-            reasoning_effort: max
-          agent:
-            model: gpt-6-luna
-            reasoning_effort: max
-      model_availability: NotChecked
+      configuration:
+        host:
+          required_total_agents: 20
+      model_selection: PerAssignment
 ```
 
 - `schema_version` identifies the output contract; incompatible changes increment it.
@@ -450,16 +443,17 @@ result:
 - `integrations` reports each harness's resolved instruction file and managed-block
   status: `Connected`, `Missing`, or `Conflict`. Multiple harnesses can share a file;
   this reports file contents, not which harness is running.
-- `models` preserves the configuration's role names and reports model and reasoning effort.
-- `model_availability: NotChecked` means the command has not queried your AI host.
+- `configuration.host` reports the project's required total agent capacity.
+- `model_selection: PerAssignment` reports the framework's selection policy.
+  The CLI does not query host models or report running agents' settings.
 
-These are requested settings, not evidence of an agent's runtime configuration.
-The [agent configuration rules](cortex/teams/gizmo-team/docs/agent-configuration.md#use-the-host-speed-setting)
-leave speed to the host session. Select Fast in the host before launching agents;
-Meta-Cortex does not configure or override the service tier. Remove `mode` and
-`service_tier` from role sections; both fields are rejected. The CLI report uses
-schema version 5 and reports only model and reasoning effort for each role.
-Actual processing-tier verification requires host runtime metadata.
+Report schema version 6 replaces the static `models` and `model_availability`
+fields with `configuration` and `model_selection`. Consumers must use the new
+shape; no compatibility decoder is retained for this inspection report.
+The [agent configuration rules](cortex/teams/gizmo-team/docs/agent-configuration.md)
+own task-based model and effort selection, reassessment, and host limitations.
+Speed stays with the host session; Meta-Cortex does not override its service tier.
+Actual execution-setting verification requires host runtime metadata.
 
 Inspection does not modify project files. Failures produce a structured error
 response on stdout with exit status 2.
@@ -487,7 +481,7 @@ Tasks and follow-ups in that conversation retain both choices. Configuration use
 questions and the library's Bun helper; see the
 [setup and configuration instructions](cortex/README.md#execution-configuration).
 Read the [framework guide](cortex/README.md) for project context, agent
-coordination, model configuration, and agent skills.
+coordination, model selection, and agent skills.
 The [coordination state machine](cortex/teams/gizmo-team/docs/coordination-state-machine.md)
 is the evolving framework architecture and human handoff specification.
 
@@ -670,7 +664,10 @@ Automated framework upgrades are not implemented yet.
 1. Back up the project's `.meta-cortex/` directory.
 2. Move the existing directory out of the installation path.
 3. Run a `Framework / Initialize` YAML request with the new executable.
-4. Review and reapply your configuration changes.
+4. Review and reapply supported host capacity changes. Remove the superseded
+   `[gizmo-prime]`, `[team.gizmo]`, and `[team.agent]` model/effort sections.
+   They are rejected by the new configuration schema; model selection now belongs
+   to the launching agent.
 
 Repeated initialization succeeds when the installed framework is unchanged and
 matches the executable's bundle, allowing valid changes to `meta-cortex.toml`.

@@ -3,7 +3,7 @@
 Own read-only verification of the tech writer's committed work against every
 practice and rule in the writing YAML catalogs. Report only to the assigning
 Team Gizmo under the [communication rules](../../../AGENTS.md#communication-and-decisions).
-Use the configured team-agent settings; the tech writer owns repairs.
+Use settings selected by Team Gizmo for this review; the tech writer owns repairs.
 
 ## Required actions
 

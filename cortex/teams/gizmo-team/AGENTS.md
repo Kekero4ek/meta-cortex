@@ -1,7 +1,7 @@
 # Gizmo Team
 
 Own feature coordination and assignments across teams. Both coordinators run as
-subagents, with their distinct execution settings from the framework configuration.
+subagents, with execution settings selected for their current assignments.
 
 ## Knowledge
 

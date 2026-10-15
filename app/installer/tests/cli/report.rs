@@ -12,14 +12,14 @@ pub(super) struct InfoDocument {
     pub(super) framework_version: ReportVersion,
     pub(super) paths: ReportPaths,
     pub(super) integrations: Vec<ReportIntegration>,
-    pub(super) models: ReportModels,
-    pub(super) model_availability: ModelAvailability,
+    pub(super) configuration: ReportConfiguration,
+    pub(super) model_selection: ModelSelection,
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(try_from = "u32")]
 pub(super) enum ReportSchemaVersion {
-    V5,
+    V6,
 }
 
 #[derive(Debug, Error)]
@@ -33,13 +33,13 @@ impl TryFrom<u32> for ReportSchemaVersion {
 
     fn try_from(version: u32) -> Result<Self, Self::Error> {
         match version {
-            5 => Ok(Self::V5),
+            6 => Ok(Self::V6),
             _ => Err(ReportSchemaVersionError::Unsupported),
         }
     }
 }
 
-// Independent decoder for the established semantic-release strings in report schema 5.
+// Independent decoder for the established semantic-release strings in report schema 6.
 #[derive(Debug, PartialEq, Eq, Deserialize)]
 pub(super) enum ReportVersion {
     #[serde(rename = "0.6.2")]
@@ -101,8 +101,8 @@ pub(super) struct ReportIntegration {
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize)]
-pub(super) enum ModelAvailability {
-    NotChecked,
+pub(super) enum ModelSelection {
+    PerAssignment,
 }
 
 #[derive(Deserialize)]
@@ -115,11 +115,8 @@ pub(super) struct ReportPaths {
 
 #[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct ReportModels {
+pub(super) struct ReportConfiguration {
     pub(super) host: ReportHost,
-    #[serde(rename = "gizmo-prime")]
-    pub(super) gizmo_prime: ReportAgent,
-    pub(super) team: ReportTeam,
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize)]
@@ -133,21 +130,7 @@ pub(super) struct ReportHost {
 pub(super) struct ReportRequiredTotalAgents(NonZeroU32);
 
 impl ReportRequiredTotalAgents {
-    pub(super) const STANDARD: Self = Self(NonZeroU32::MIN.saturating_add(19));
-}
-
-#[derive(Debug, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct ReportTeam {
-    pub(super) gizmo: ReportAgent,
-    pub(super) agent: ReportAgent,
-}
-
-#[derive(Debug, PartialEq, Eq, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct ReportAgent {
-    pub(super) model: String,
-    pub(super) reasoning_effort: String,
+    pub(super) const CUSTOM: Self = Self(NonZeroU32::MIN.saturating_add(36));
 }
 
 #[cfg(test)]
@@ -166,7 +149,9 @@ mod tests {
 
     #[test]
     fn report_consumer_rejects_undeclared_or_malformed_versions() {
-        for input in ["0", "1", "2", "3", "4", "6", "-1", "3.5", "\"6\"", "null"] {
+        for input in [
+            "0", "1", "2", "3", "4", "5", "7", "-1", "3.5", "\"six\"", "null",
+        ] {
             assert!(
                 serde_saphyr::from_str::<ReportSchemaVersion>(input).is_err(),
                 "{input}"

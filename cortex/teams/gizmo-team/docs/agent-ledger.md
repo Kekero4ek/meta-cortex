@@ -877,6 +877,11 @@ history, but removed outcomes are absent from the current Feature log projection
 
 ## Recovery and stale work
 
+Apply [execution reassessment](agent-configuration.md#reassess-and-change-execution-settings)
+when recovering work or assigning repairs. Keep the selected model, effort,
+rationale, and triggering evidence in existing continuation notes. Those notes
+support the next decision; they do not configure or stop a host agent.
+
 A lease expiring is an observation, not proof the worker has stopped. There is
 no background TTL process. Status computes expiration when queried.
 

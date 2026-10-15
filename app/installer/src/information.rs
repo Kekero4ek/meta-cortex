@@ -20,7 +20,7 @@ pub enum VersionError {
     },
 }
 
-// Installed metadata and report schema 5 retain Cargo's semantic-version text.
+// Installed metadata and report schema 6 retain Cargo's semantic-version text.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(into = "&'static str")]
 pub enum Version {
@@ -156,17 +156,17 @@ pub struct ProjectInfo {
 #[derive(Clone, Serialize)]
 #[serde(into = "u32")]
 enum InfoSchemaVersion {
-    V5,
+    V6,
 }
 
 impl InfoSchemaVersion {
-    const CURRENT: Self = Self::V5;
+    const CURRENT: Self = Self::V6;
 }
 
 impl From<InfoSchemaVersion> for u32 {
     fn from(version: InfoSchemaVersion) -> Self {
         match version {
-            InfoSchemaVersion::V5 => 5,
+            InfoSchemaVersion::V6 => 6,
         }
     }
 }
@@ -179,8 +179,8 @@ struct InfoPaths {
 }
 
 #[derive(Serialize)]
-enum ModelAvailability {
-    NotChecked,
+enum ModelSelection {
+    PerAssignment,
 }
 
 #[derive(Serialize)]
@@ -190,8 +190,8 @@ pub struct InfoReport {
     framework_version: Version,
     paths: InfoPaths,
     integrations: Vec<HarnessInfo>,
-    models: Configuration,
-    model_availability: ModelAvailability,
+    configuration: Configuration,
+    model_selection: ModelSelection,
 }
 
 impl From<ProjectInfo> for InfoReport {
@@ -207,8 +207,8 @@ impl From<ProjectInfo> for InfoReport {
             framework_version: info.version,
             paths,
             integrations: info.integrations,
-            models: info.configuration,
-            model_availability: ModelAvailability::NotChecked,
+            configuration: info.configuration,
+            model_selection: ModelSelection::PerAssignment,
         }
     }
 }

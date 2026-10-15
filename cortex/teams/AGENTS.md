@@ -33,7 +33,8 @@ apply only to `multi_agent` mode.
 
 For a new multi-agent task, read [Gizmo Prime](gizmo-team/agents/gizmo-prime/AGENTS.md) and launch it
 as a subagent through the host’s agent execution tool. This subagent is the
-root coordinator, using its configured model and reasoning effort with the host session's speed.
+root coordinator, with model and effort selected for the feature under the shared
+configuration rules and with the host session's speed.
 Carry the user's objective, constraints, acceptance criteria, project context,
 and the loaded circuit-breaker policy into the assignment.
 Follow-ups stay with the existing coordinator.
@@ -143,7 +144,9 @@ following from the active library and supplies them in the launch instructions:
 - The team’s `docs/` directory, its `index.yaml` when present, and the documents
   relevant to the assignment. Include referenced subject documents from other
   teams when the task depends on them.
-- The assigned agent’s own `AGENTS.md` and the execution configuration context.
+- The assigned agent’s own `AGENTS.md` and the execution configuration context,
+  including selected model, effort, rationale, host capability source, and any
+  reassessment or replacement evidence.
 
 Include the policies in the supplied context or require the receiving agent to
 read their resolved files before any task work. Do not assume parent-session

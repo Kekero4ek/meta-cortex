@@ -159,21 +159,23 @@ Windows uses native `.exe` tools, with no WSL or Git Bash requirement.
 
 **Required:** set `$env:PATH` and run the library-root check as above.
 
-### Role configuration
+### Assignment execution settings
 
-[meta-cortex.toml](meta-cortex.toml) declares the required total host agent capacity
-and selects the model and reasoning effort for each delegated role in multi-agent mode.
+[meta-cortex.toml](meta-cortex.toml) declares the required total host agent capacity.
 The entry point runs the [host capacity preflight](teams/gizmo-team/docs/agent-configuration.md#check-host-capacity)
 after session choices, before development in either mode. Speed comes from the host session.
-Single-agent mode keeps the current host model and reasoning effort. The
-[configuration rules](teams/gizmo-team/docs/agent-configuration.md) define how
-the host applies those settings.
+Single-agent mode keeps the current host model and reasoning effort.
 
-1. Check that the configured models and reasoning efforts are supported by your host.
-2. Adjust the role settings and select the desired speed in the host.
-3. Start the task through a host capable of running the configured roles.
-   - Unsupported models, reasoning efforts, or missing execution capabilities are reported as blockers.
-   - Agents must not silently substitute another model or reasoning effort.
+In multi-agent mode, the launching agent selects model and effort for each
+assignment using the host's current capabilities and the
+[selection policy](teams/gizmo-team/docs/agent-configuration.md#choose-settings-for-the-assignment).
+Gizmo reassesses those choices when scope changes or results need repair.
+The policy covers supported session updates and replacement handoffs that
+preserve work. No manual role-model tuning is required.
+
+- **Prohibited:** assign all tasks one fixed model and effort regardless of complexity.
+- **Required:** assess the assignment, pass supported settings through the host
+  execution tool, and reassess when the evidence changes.
 
 ## Agent skills
 

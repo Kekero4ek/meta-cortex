@@ -27,6 +27,9 @@ They describe the existing framework, not additional stored states.
   Apply the [worker identity protocol](agent-ledger.md#worker-instance-identity)
   for UUID retention. Revision, attempt, and identity checks remain ledger
   preconditions; an assignment record does not prove a host agent launched.
+  The assigning agent owns [model and effort selection](agent-configuration.md#choose-settings-for-the-assignment)
+  and [reassessment](agent-configuration.md#reassess-and-change-execution-settings).
+  A replacement execution preserves task progress through ledger recovery.
 - **Workspace:** the concrete branch/path/base and its inspected Git condition.
   A prepared workspace is an operation's output, not a task lifecycle state.
   Workspace readiness neither means implementation is ready nor ends an

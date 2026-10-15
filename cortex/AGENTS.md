@@ -69,7 +69,7 @@ then begin work under both selected choices.
     current host model and settings. Technical requirements still apply;
     delegation and coordinator routing requirements apply only in multi-agent mode.
 - **`multi_agent`**
-  - Use the existing Gizmo workflow and configured role settings.
+  - Use the Gizmo workflow with model and effort selected per assignment.
 - **`create_pr`**
   - This is the recommended first delivery option. Follow the
     [project delivery policy](teams/delivery-team/docs/project-delivery-policy.md#configured-implementation-delivery)

@@ -65,6 +65,8 @@ flowchart LR
   - Unfinished work and blockers.
 - Send unmet acceptance criteria back to Team Gizmo for correction within the
   authorized scope. Report unrelated findings separately; do not add them as new goals.
+- Apply [execution reassessment](../../docs/agent-configuration.md#reassess-and-change-execution-settings)
+  when Team Gizmo needs different model or effort settings for its coordination work.
 - Review the corrected result against the completion criteria.
 - Accept the local outcome when those criteria are met, then apply the
   [configured implementation delivery](../../../delivery-team/docs/project-delivery-policy.md#configured-implementation-delivery).

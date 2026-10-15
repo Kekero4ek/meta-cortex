@@ -1,17 +1,15 @@
 # Agent Configuration
 
-[meta-cortex.toml](../../../meta-cortex.toml) is the source of required host
-capacity, model, and reasoning-effort settings. Read the resolved configuration from the active
-library, including the consuming project's values. Each role selects its own section:
+[meta-cortex.toml](../../../meta-cortex.toml) owns required host capacity.
+The launching agent chooses model and reasoning effort for each assignment from
+the active host's supported combinations. There are no static role settings or
+framework model catalog. Speed belongs to the host session. Single-agent mode
+keeps the current host model and effort.
 
-- **Gizmo Prime:** `[gizmo-prime]`.
-- **Team Gizmo:** `[team.gizmo]`.
-- **Team agents:** `[team.agent]`, including documentation, review, integration,
-  and PR delivery agents.
-
-Each section requires `model` and `reasoning_effort`. Speed belongs to the host
-session. There is no framework execution `mode` or `service_tier` field. The
-session's `single_agent` or `multi_agent` choice remains independent of speed.
+The host agent selects Gizmo Prime's settings; Prime selects Team Gizmo's;
+Team Gizmo selects each worker's and verifier's. The assigning agent owns later
+reassessment through the same hierarchy. Workers report evidence and may
+recommend a change; they do not launch replacements or change peer settings.
 
 ## Required actions
 
@@ -103,26 +101,104 @@ after saving a larger limit.
 changes, obtain approval, reparse the saved edit, request a restart, and recheck
 active capacity on resumption.
 
-### Launch with the configured settings
+### Choose settings for the assignment
 
-1. Read the current configuration and select the launched role's section.
-   Do not substitute remembered values, bundled defaults, or coordinator settings.
-2. Pass the exact configured `model` and `reasoning_effort` through the host tool.
-   Choose a context fork that permits those explicit settings. For hosts where
-   `fork_turns="all"` rejects overrides, use `fork_turns="none"` or a supported
-   bounded history value and supply the complete
+1. Read the active host's model catalog and supported effort values from its
+   execution-tool instructions or discovery metadata. Use exact identifiers from
+   that source, including supported model/effort combinations. Do not infer an
+   identifier from a display name or use a stale catalog embedded in the framework.
+   If that information is unavailable, report the limitation before launching.
+2. Assess the actual assignment: ambiguity, reasoning depth, UI/design demands,
+   cross-module dependencies, correctness risk, review scope, and prior attempts.
+   Honor explicit user model, effort, cost, and latency constraints. Select the
+   least costly combination likely to meet the required quality; do not choose
+   solely by role, language, or file extension.
+3. Choose model capability and reasoning effort separately. High effort on a
+   smaller model does not automatically provide a stronger model's capability.
+   Use these examples as judgment cues, not fixed role mappings:
+   - Routine monitoring or a bounded status check can use a lightweight model,
+     such as Luna with `max` effort when the host supports it and the reasoning
+     warrants it. A trivial check may need less effort.
+   - Complex TypeScript UI work, visual interaction design, and difficult state
+     behavior warrant a strong model from the start, such as Astra with a
+     supported high effort. A small copy edit does not have the same demands.
+   - Complex Rust ownership, concurrency, architecture, or cross-module repairs
+     can warrant Astra or Sol with `xhigh` or `max`, when supported. Choose from
+     the actual reasoning burden and available evidence.
+   - Coordinators and reviewers also need settings suited to their current
+     decisions; routine tracking and a difficult architecture dispute differ.
+4. Record the selected model, effort, and a short task-specific rationale in
+   assignment context. Use existing ledger continuation notes when the ledger
+   is available; carry bootstrap choices until they can be recorded. These are
+   per-attempt decisions, not settings to write back into TOML or role files.
+   Make routine choices autonomously without asking the user to tune each agent.
+
+**Prohibited:** assign every developer the same model because `[team.agent]`
+used it, or give a complex UI repair the cheapest model without assessing risk.
+
+**Required:** explain that the UI repair spans interaction states and prior
+attempts missed a requirement, then select a supported stronger combination.
+Record why it fits this assignment and retain the user's constraints.
+
+### Launch with the selected settings
+
+1. Apply the selection above before every launch, including Gizmo Prime.
+   Reassess before reusing a session for a changed assignment or repair.
+2. Pass the selected `model` and `reasoning_effort` explicitly through the host
+   execution tool, adapting parameter names to its contract. Choose a context
+   fork that permits those settings. Where `fork_turns="all"` rejects overrides,
+   use `fork_turns="none"` or another supported mode and supply the complete
    [assignment context](../../AGENTS.md#assignment-context).
 3. Leave speed to the host as described below. Do not add a tier override to the
-   launch request. Host configuration changes require the capacity approval above.
-4. Reuse a session only when its model and effort match the role settings.
-   Reading configuration or mentioning settings in a prompt does not change a
-   running session.
+   launch request. Host configuration changes follow the approval procedure above.
+4. Check the host's launch result and returned execution metadata when available.
+   Record a requested setting separately from a confirmed runtime setting.
+   If a chosen combination is rejected or unavailable, select another supported
+   combination that meets the assignment and user constraints and record why.
+   If none does, report the blocker; do not silently inherit settings.
 
-**Prohibited:** send a nonexistent `mode` argument to `spawn_agent`, or tell a
-child to change its model through assignment text.
+**Prohibited:** tell a child to use Astra in its prompt while the tool launches
+it with inherited settings, or send an unsupported `mode` argument.
 
-**Required:** read `[team.agent]`, pass its model and effort explicitly, and
-leave the host's speed selection in place.
+**Required:** pass the selected model and effort through the actual tool with
+compatible context handling and report any unsupported execution capability.
+
+### Reassess and change execution settings
+
+1. Reassess when scope or difficulty changes, a check or review exposes incorrect
+   work, progress stalls, or an attempted repair fails. Inspect the evidence and
+   remaining work before choosing the next execution. A tool outage or missing
+   dependency may require an environment fix rather than more reasoning.
+2. Keep a suitable combination when the failure has a clear bounded correction.
+   Increase effort or choose a stronger model when reasoning or implementation
+   quality is insufficient. Simplify the assignment when that resolves ambiguity.
+   Once difficult work is complete, a cheaper combination may suit monitoring.
+   Do not wait for repeated failures when the first result shows a capability gap.
+3. Record the prior and selected settings, the triggering evidence, and the next
+   acceptance checks in existing assignment or continuation notes. Stay within
+   the [bounded repair workflow](agent-verification.md); changing models does not
+   reset its repair limit or authorize broader work.
+4. Reuse an existing session only when its actual settings match the new choice.
+   If the host supports changing a session's settings, use that operation at its
+   supported turn boundary and confirm the result before resuming work. Do not
+   claim a prompt or a configuration edit changed a running model.
+5. If changing that session is unsupported, stop its execution or establish that
+   it finished before launching a replacement. Preserve its branch, uncommitted
+   edits, checkpoints, findings, failed checks, and remaining acceptance criteria.
+   Apply [ledger recovery](agent-ledger.md#recovery-and-stale-work), including any
+   required requeue and new claim. Supply the new session's complete context and
+   selected settings; retain one writer per workspace.
+6. Evaluate the resulting work against the same acceptance criteria and required
+   checks. A more capable model does not itself establish that the repair passed.
+   Workers request reassessment from Team Gizmo; Prime reassesses Team Gizmo,
+   and the host agent reassesses Prime.
+
+**Prohibited:** retry unchanged settings indefinitely, start a second writer in
+an active workspace, or mark a failed feature fixed because its model changed.
+
+**Required:** after a weak repair misses a Rust invariant, Gizmo records that
+failure, selects stronger supported settings, preserves the work through the
+host and ledger handoff, and requires the replacement's repair to pass checks.
 
 ### Use the host speed setting
 
@@ -164,6 +240,6 @@ completed. The host exposes no actual processing-tier metadata for the child.”
 ## Prohibited actions
 
 - Do not retain execution-mode or service-tier fields in framework configuration.
-- Do not introduce model or effort defaults, or per-agent overrides.
-- Do not duplicate model choices in role instructions or delegation prompts.
-- Skills have no execution settings.
+- Do not restore static role model/effort settings or a bundled model allowlist.
+- Do not turn illustrative task examples into a mandatory model lookup table.
+- Keep selection policy here; roles and skills link it instead of fixing models.

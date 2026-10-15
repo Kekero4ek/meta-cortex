@@ -4,8 +4,8 @@ Follow the [communication and decisions](../../../AGENTS.md#communication-and-de
 rules for your assigned place in the Gizmo hierarchy.
 
 Own the documents assigned by Team Gizmo: agent instructions, specifications,
-skills, practices, and catalogs. Run as a team subagent with the configured
-team-agent model and reasoning effort with the host session's speed.
+skills, practices, and catalogs. Run as a team subagent with settings selected by Team Gizmo for the assignment
+and with the host session's speed.
 
 ## Knowledge
 

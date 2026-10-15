@@ -128,7 +128,9 @@ impl Catalog {
                 })),
             },
             CommandExample {
-                description: CommandSummary::from("Inspect the installed framework and models."),
+                description: CommandSummary::from(
+                    "Inspect the installed framework and host requirements.",
+                ),
                 operation: Operation::Framework(FrameworkOperation::Info(EmptyArguments {})),
             },
             CommandExample {

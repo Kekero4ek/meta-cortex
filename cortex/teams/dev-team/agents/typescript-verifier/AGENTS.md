@@ -3,7 +3,7 @@
 Own read-only verification of an assigned worker's committed work against every
 practice and rule in the TypeScript YAML catalogs. Report only to the assigning Team
 Gizmo under the [communication rules](../../../AGENTS.md#communication-and-decisions).
-Use the configured team-agent settings; this role does not implement repairs.
+Use settings selected by Team Gizmo for this review; this role does not implement repairs.
 
 ## Required actions
 
